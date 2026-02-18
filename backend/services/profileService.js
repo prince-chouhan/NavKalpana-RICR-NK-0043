@@ -1,0 +1,67 @@
+import Profile from '../models/Profile.js';
+import { calculateBMI, calculateBMR, getActivityFactor, calculateDailyCalorieTarget } from '../utils/calculationUtils.js';
+
+export const createProfile = async (user_id, profileData) => {
+  // Check if profile already exists
+  const existingProfile = await Profile.findOne({ user_id });
+  if (existingProfile) {
+    throw new Error('Profile already exists for this user');
+  }
+  
+  // Calculate derived fields
+  const height_m = profileData.height_cm / 100;
+  const bmi = calculateBMI(profileData.weight_kg, profileData.height_cm);
+  const bmr = calculateBMR(profileData.weight_kg, profileData.height_cm, profileData.age, profileData.biological_sex);
+  const activity_factor = getActivityFactor(profileData.activity_level);
+  const daily_calorie_target = calculateDailyCalorieTarget(bmr, activity_factor, profileData.goal, profileData.biological_sex);
+  
+  const profile = new Profile({
+    user_id,
+    ...profileData,
+    height_m,
+    bmi,
+    bmr,
+    activity_factor,
+    daily_calorie_target
+  });
+  
+  await profile.save();
+  return profile;
+};
+
+export const getProfile = async (user_id) => {
+  const profile = await Profile.findOne({ user_id });
+  
+  if (!profile) {
+    throw new Error('Profile not found');
+  }
+  
+  return profile;
+};
+
+export const updateProfile = async (user_id, profileData) => {
+  const profile = await Profile.findOneAndUpdate(
+    { user_id },
+    {
+      ...profileData,
+      height_m: profileData.height_cm / 100,
+      bmi: calculateBMI(profileData.weight_kg, profileData.height_cm),
+      bmr: calculateBMR(profileData.weight_kg, profileData.height_cm, profileData.age, profileData.biological_sex),
+      activity_factor: getActivityFactor(profileData.activity_level),
+      daily_calorie_target: calculateDailyCalorieTarget(
+        calculateBMR(profileData.weight_kg, profileData.height_cm, profileData.age, profileData.biological_sex),
+        getActivityFactor(profileData.activity_level),
+        profileData.goal,
+        profileData.biological_sex
+      ),
+      updated_at: new Date()
+    },
+    { new: true }
+  );
+  
+  if (!profile) {
+    throw new Error('Profile not found');
+  }
+  
+  return profile;
+};
