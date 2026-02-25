@@ -45,7 +45,7 @@ export const AnimationDemo = () => {
               <p className="text-gray-600">Playful wiggle animation</p>
             </AnimatedCard>
           </div>
-        </div>
+        </div> 
 
         
         <div className="mb-12">
